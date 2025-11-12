@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@langchain/core": "^0.2.20",
     "@langchain/google-genai": "^0.0.22",
     "@langchain/pinecone": "^0.0.8",
     "@pinecone-database/pinecone": "^2.2.2",
