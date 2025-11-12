@@ -1,5 +1,5 @@
 // Import các thư viện cần thiết
-// quan trọng: đây là cú pháp "require" của Node.js, không phải "import"
+// Dòng streaming đã được XÓA HOÀN TOÀN vì bạn không cần nó.
 const { Pinecone } = require("@pinecone-database/pinecone");
 const { PineconeStore } = require("@langchain/pinecone");
 const { GoogleGenerativeAiEmbeddings, ChatGoogleGenerativeAI } = require("@langchain/google-genai");
@@ -25,11 +25,13 @@ module.exports = async (req, res) => {
         }
 
         // 2. Lấy API keys từ Biến Môi Trường của Vercel
+        // Tên biến môi trường đã được thống nhất là GEMINI_API_KEY
         const googleApiKey = process.env.GEMINI_API_KEY;
         const pineconeApiKey = process.env.PINECONE_API_KEY;
 
         if (!googleApiKey || !pineconeApiKey) {
-            return res.status(500).json({ error: "API keys not configured" });
+            // Lỗi này cho biết bạn chưa cấu hình Biến Môi Trường trên Vercel Dashboard
+            return res.status(500).json({ error: "API keys not configured (GEMINI_API_KEY or PINECONE_API_KEY missing)" });
         }
 
         // 3. Khởi tạo các dịch vụ
@@ -99,7 +101,7 @@ CÂU TRẢ LỜI (bằng tiếng Việt):
         const answer = await ragChain.invoke({ question: question });
         console.log("Đã có câu trả lời.");
 
-        // Gửi câu trả lời về cho frontend
+        // Gửi câu trả lời về cho frontend (phản hồi JSON)
         res.status(200).json({ answer: answer });
 
     } catch (error) {
