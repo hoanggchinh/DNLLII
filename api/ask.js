@@ -1,9 +1,9 @@
 // Import các thư viện cần thiết
+// (Đã xóa các import không dùng tới)
 const { Pinecone } = require("@pinecone-database/pinecone");
 const { PineconeStore } = require("@langchain/pinecone");
-const { GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI } = require("@langchain/google-genai");
+const { GoogleGenerativeAiEmbeddings, ChatGoogleGenerativeAI } = require("@langchain/google-genai");
 const { PromptTemplate } = require("@langchain/core/prompts");
-const { StringOutputParser } = require("@langchain/core/output_parsers");
 
 // Cấu hình: Tên Index Pinecone của bạn
 const PINECONE_INDEX_NAME = "rag-do-an";
@@ -18,31 +18,24 @@ module.exports = async (req, res) => {
     try {
         // 1. Lấy câu hỏi từ body của request
         const { question } = req.body;
-        if (!question || typeof question !== 'string') {
-            return res.status(400).json({ error: "Question is required and must be a string" });
+        if (!question) {
+            return res.status(400).json({ error: "Question is required" });
         }
 
         // 2. Lấy API keys từ Biến Môi Trường của Vercel
+        // (Đảm bảo bạn đã sửa tên biến trên Vercel thành GEMINI_API_KEY)
         const googleApiKey = process.env.GEMINI_API_KEY;
         const pineconeApiKey = process.env.PINECONE_API_KEY;
 
         if (!googleApiKey || !pineconeApiKey) {
-            console.error("Missing API keys:", {
-                hasGemini: !!googleApiKey,
-                hasPinecone: !!pineconeApiKey
-            });
-            return res.status(500).json({
-                error: "API keys not configured (GEMINI_API_KEY or PINECONE_API_KEY missing)"
-            });
+            return res.status(500).json({ error: "API keys not configured (GEMINI_API_KEY or PINECONE_API_KEY missing)" });
         }
-
-        console.log("Initializing services...");
 
         // 3. Khởi tạo các dịch vụ
         const pinecone = new Pinecone({ apiKey: pineconeApiKey });
         const pineconeIndex = pinecone.Index(PINECONE_INDEX_NAME);
 
-        const embeddings = new GoogleGenerativeAIEmbeddings({
+        const embeddings = new GoogleGenerativeAiEmbeddings({
             model: "models/text-embedding-004",
             apiKey: googleApiKey,
         });
@@ -51,8 +44,9 @@ module.exports = async (req, res) => {
             pineconeIndex,
         });
 
+        // >>>>> LỖI 404 ĐÃ SỬA Ở ĐÂY:
         const model = new ChatGoogleGenerativeAI({
-            model: "gemini-1.5-flash-latest",
+            model: "gemini-1.5-flash", // Bỏ "-latest"
             apiKey: googleApiKey,
             temperature: 0.3,
         });
@@ -74,55 +68,35 @@ CÂU HỎI:
 CÂU TRẢ LỜI (bằng tiếng Việt):
         `);
 
-        // 5. Tìm kiếm và tạo câu trả lời
+        // 5. (Mục 5 cũ đã bị xóa vì không dùng đến)
+
+        // 6. Thực thi RAG theo cách thủ công (như log của bạn)
+        console.log("Initializing services..."); // (Log mới)
+
+        const retriever = vectorStore.asRetriever(4);
+        const formatContext = (docs) => docs.map((doc) => doc.pageContent).join("\n\n");
+
         console.log("Searching for relevant documents...");
 
-        // Tìm kiếm 4 documents liên quan nhất
-        const retriever = vectorStore.asRetriever(4);
+        // Bước 1: Tìm kiếm documents
         const relevantDocs = await retriever.invoke(question);
+        const context = formatContext(relevantDocs);
 
-        console.log(`Found ${relevantDocs.length} relevant documents`);
+        console.log(`Found ${relevantDocs.length} relevant documents. Generating answer...`);
 
-        // Kết hợp nội dung các documents thành context
-        const context = relevantDocs
-            .map((doc) => doc.pageContent)
-            .join("\n\n");
-
-        // Tạo prompt với context và question
+        // Bước 2: Tạo câu trả lời
         const prompt = await promptTemplate.format({ context, question });
+        // 'model.invoke(prompt)' sẽ trả về một object (AIMessage)
+        const answer = await model.invoke(prompt);
 
-        console.log("Generating answer...");
-
-        // Gọi model để tạo câu trả lời
-        const response = await model.invoke(prompt);
-
-        // Lấy nội dung text từ response
-        const answer = typeof response === 'string'
-            ? response
-            : response.content || response.text || String(response);
-
-        console.log("Answer generated successfully");
+        console.log("Answer generated.");
 
         // Gửi câu trả lời về cho frontend
-        res.status(200).json({
-            answer: answer,
-            // Optional: trả về metadata để debug (có thể bỏ)
-            metadata: {
-                documentsFound: relevantDocs.length
-            }
-        });
+        // (Lấy nội dung từ object AIMessage)
+        res.status(200).json({ answer: answer.content });
 
     } catch (error) {
         console.error("Error processing request:", error);
-
-        // Trả về lỗi chi tiết hơn
-        const errorMessage = error.message || "Unknown error occurred";
-        const errorType = error.constructor.name;
-
-        res.status(500).json({
-            error: "An error occurred while processing your request",
-            details: errorMessage,
-            type: errorType
-        });
+        res.status(500).json({ error: "An error occurred: " + error.message });
     }
 };
