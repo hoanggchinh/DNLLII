@@ -1,8 +1,8 @@
 // Import các thư viện cần thiết
-// Dòng streaming đã được XÓA HOÀN TOÀN vì bạn không cần nó.
+// quan trọng: đây là cú pháp "require" của Node.js, không phải "import"
 const { Pinecone } = require("@pinecone-database/pinecone");
 const { PineconeStore } = require("@langchain/pinecone");
-const { GoogleGenerativeAiEmbeddings, ChatGoogleGenerativeAI } = require("@langchain/google-genai");
+const { GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI } = require("@langchain/google-genai");
 const { PromptTemplate } = require("@langchain/core/prompts");
 const { RunnableSequence } = require("@langchain/core/runnables");
 const { StringOutputParser } = require("@langchain/core/output_parsers");
@@ -25,13 +25,11 @@ module.exports = async (req, res) => {
         }
 
         // 2. Lấy API keys từ Biến Môi Trường của Vercel
-        // Tên biến môi trường đã được thống nhất là GEMINI_API_KEY
         const googleApiKey = process.env.GEMINI_API_KEY;
         const pineconeApiKey = process.env.PINECONE_API_KEY;
 
         if (!googleApiKey || !pineconeApiKey) {
-            // Lỗi này cho biết bạn chưa cấu hình Biến Môi Trường trên Vercel Dashboard
-            return res.status(500).json({ error: "API keys not configured (GEMINI_API_KEY or PINECONE_API_KEY missing)" });
+            return res.status(500).json({ error: "API keys not configured" });
         }
 
         // 3. Khởi tạo các dịch vụ
@@ -40,7 +38,7 @@ module.exports = async (req, res) => {
         const pineconeIndex = pinecone.Index(PINECONE_INDEX_NAME);
 
         // Khởi tạo model Embedding
-        const embeddings = new GoogleGenerativeAiEmbeddings({
+        const embeddings = new GoogleGenerativeAIEmbeddings({
             model: "models/text-embedding-004",
             apiKey: googleApiKey,
         });
@@ -101,7 +99,7 @@ CÂU TRẢ LỜI (bằng tiếng Việt):
         const answer = await ragChain.invoke({ question: question });
         console.log("Đã có câu trả lời.");
 
-        // Gửi câu trả lời về cho frontend (phản hồi JSON)
+        // Gửi câu trả lời về cho frontend
         res.status(200).json({ answer: answer });
 
     } catch (error) {
