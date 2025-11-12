@@ -76,8 +76,8 @@ CÂU TRẢ LỜI (bằng tiếng Việt):
         // 5. Tìm kiếm và tạo câu trả lời
         console.log("Searching for relevant documents...");
 
-        // Tìm kiếm 4 documents liên quan nhất
-        const retriever = vectorStore.asRetriever(4);
+        // Tìm kiếm 10 documents liên quan nhất (tăng từ 4 lên 10)
+        const retriever = vectorStore.asRetriever(10);
         const relevantDocs = await retriever.invoke(question);
 
         console.log(`Found ${relevantDocs.length} relevant documents`);
