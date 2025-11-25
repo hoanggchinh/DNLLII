@@ -11,6 +11,12 @@
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
+
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <style>
     :root {
         --bg-peal: rgba(255, 255, 255, 0.1); /* non-blurred fallback */
@@ -705,6 +711,22 @@
                     font-style: italic;
                     animation: fadeIn 0.5s;
                 }
+                .chat-container-terminal .bot-message p {
+                    margin: 5px 0; /* Cách dòng đoạn văn */
+                }
+                .chat-container-terminal .bot-message ul,
+                .chat-container-terminal .bot-message ol {
+                    margin: 5px 0 5px 20px; /* Thụt đầu dòng cho danh sách */
+                    padding: 0;
+                }
+                .chat-container-terminal .bot-message li {
+                    margin-bottom: 3px;
+                }
+                .chat-container-terminal .bot-message strong {
+                    font-weight: bold;
+                    color: #000; /* Làm đậm chữ quan trọng */
+                }
+
                 @keyframes fadeIn {
                     from { opacity: 0; }
                     to { opacity: 1; }
@@ -746,12 +768,20 @@
             chatBox.scrollTop(chatBox[0].scrollHeight);
         };
 
-        // Hàm hiển thị tin nhắn (dùng jQuery để tạo và thêm)
+        // Hàm hiển thị tin nhắn ĐÃ SỬA
         const displayMessage = (text, sender) => {
             const msgDiv = $('<div></div>')
                 .addClass('message')
-                .addClass(sender === 'user' ? 'user-message' : 'bot-message')
-                .html(text); // Dùng html() để hỗ trợ Markdown
+                .addClass(sender === 'user' ? 'user-message' : 'bot-message');
+
+            if (sender === 'bot') {
+                // Nếu là Bot: Dùng marked.parse để chuyển Markdown sang HTML
+                msgDiv.html(marked.parse(text));
+            } else {
+                // Nếu là User: Dùng text() để an toàn (tránh lỗi hiển thị code HTML)
+                msgDiv.text(text);
+            }
+
             chatBox.append(msgDiv);
             scrollToBottom();
             return msgDiv;
