@@ -8,7 +8,7 @@ const { StringOutputParser } = require("@langchain/core/output_parsers");
 
 
 const PINECONE_INDEX_NAME = "rag-do-an";
-const MODEL_NAME = "claude-haiku-4-5-20251001"; // Model mới nhất, rẻ, thông minh
+const MODEL_NAME = "claude-3-5-haiku-20241022"; // Model mới nhất, rẻ, thông minh
 const MAX_CONTEXT_LENGTH = 6000; // Giới hạn ký tự context (khoảng 1500 tokens) để tiết kiệm tiền
 const TOP_K = 4; // Chỉ lấy 4 đoạn liên quan nhất (thay vì 5-10 gây nhiễu và tốn tiền)
 
@@ -49,9 +49,12 @@ module.exports = async (req, res) => {
             model: "embedding-001",
         });
 
+        // Thêm timeout để tránh request treo
         const model = new ChatAnthropic({
             apiKey: anthropicApiKey,
             model: MODEL_NAME,
+            maxTokens: 1024,  // Giới hạn output
+            temperature: 0.3   // Giảm tính sáng tạo, tăng tính chính xác
         });
 
         // --- LOG 2: KIỂM TRA KHỞI TẠO ---
