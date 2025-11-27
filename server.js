@@ -17,25 +17,25 @@ app.use(bodyParser.json());
 
 // CẤU HÌNH GỬI MAIL (Dùng Gmail làm ví dụ)
 // Bạn cần lấy "App Password" của Gmail để điền vào .env
+// CẤU HÌNH GỬI MAIL (Cập nhật)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: "smtp.gmail.com",
+    port: 465, // Dùng cổng SSL an toàn nhất của Gmail
+    secure: true,
     auth: {
-        user: process.env.EMAIL_USER, // Email của bạn
-        pass: process.env.EMAIL_PASS  // Mật khẩu ứng dụng (App Password)
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
     }
 });
 
-
-
-// Thêm sau dòng khai báo transporter
+// Verify kết nối khi khởi động
 transporter.verify((error, success) => {
     if (error) {
-        console.log('❌ Lỗi cấu hình email:', error);
+        console.log('❌ KẾT NỐI EMAIL THẤT BẠI:', error);
     } else {
-        console.log('✅ Server email sẵn sàng gửi mail');
+        console.log('✅ Server email đã kết nối thành công với: ' + process.env.EMAIL_USER);
     }
 });
-
 
 
 
