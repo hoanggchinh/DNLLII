@@ -1,23 +1,29 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer'); // BẮT BUỘC: Import thư viện gửi mail
 require('dotenv').config();
 
 // Import các utils
-const askHandler = require('./ask'); // Đảm bảo file ask.js nằm cùng cấp
-const { pool } = require('./db');    // Đảm bảo file db.js nằm cùng cấp
-const { hashPassword, comparePassword, generateOTP } = require('./authHelper'); // Đảm bảo file authHelper.js nằm cùng cấp
+const askHandler = require('./api/ask');
+const { pool } = require('./utils/db');
+const { hashPassword, comparePassword, generateOTP } = require('./utils/authHelper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// LƯU Ý CHO VERCEL:
-// - Không cần app.use(express.static) vì Vercel tự động phục vụ file tĩnh (index.html) từ thư mục gốc.
-// - Server này chỉ thuần túy xử lý API.
+// CẤU HÌNH GỬI MAIL (Dùng Gmail làm ví dụ)
+// Bạn cần lấy "App Password" của Gmail để điền vào .env
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER, // Email của bạn
+        pass: process.env.EMAIL_PASS  // Mật khẩu ứng dụng (App Password)
+    }
+});
 
 // ---------------------------------------------------------
 // 1. API CHATBOT (RAG)
@@ -53,7 +59,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// B. Gửi OTP (Dùng chung cho Đăng ký & Quên mật khẩu)
+// B. Gửi OTP (CHẠY THẬT - GỬI EMAIL THẬT)
 app.post('/api/send-otp', async (req, res) => {
     try {
         const { email, type } = req.body; // type: 'register' hoặc 'forgot'
@@ -94,18 +100,30 @@ app.post('/api/send-otp', async (req, res) => {
             );
         }
 
-        // --- GỬI EMAIL (MOCKUP) ---
-        console.log(`\n💌 [MOCK EMAIL SERVER]`);
-        console.log(`👉 Gửi đến: ${email}`);
-        console.log(`👉 Loại: ${type === 'register' ? 'Đăng ký' : 'Quên mật khẩu'}`);
-        console.log(`👉 MÃ OTP: ${otp}`);
-        console.log(`------------------------\n`);
+        // --- GỬI EMAIL THẬT ---
+        const mailOptions = {
+            from: `"Tomtitmui OS Support" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: `Mã xác thực của bạn: ${otp}`,
+            text: `Mã OTP của bạn là: ${otp}. Mã này sẽ hết hạn trong 5 phút.`,
+            html: `<div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Xin chào!</h2>
+                    <p>Bạn đang thực hiện xác thực tài khoản tại Tomtitmui OS.</p>
+                    <p>Mã OTP của bạn là:</p>
+                    <h1 style="color: #0071e3; letter-spacing: 5px;">${otp}</h1>
+                    <p>Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này cho ai.</p>
+                   </div>`
+        };
 
-        res.json({ success: true, message: "Đã gửi mã OTP (Check Console server)" });
+        // Gửi mail (Async)
+        await transporter.sendMail(mailOptions);
+
+        console.log(`✅ Đã gửi OTP đến: ${email}`);
+        res.json({ success: true, message: "Đã gửi mã OTP đến email của bạn." });
 
     } catch (err) {
         console.error("Lỗi gửi OTP:", err);
-        res.status(500).json({ success: false, message: "Lỗi hệ thống khi gửi OTP" });
+        res.status(500).json({ success: false, message: "Không thể gửi email. Vui lòng kiểm tra lại địa chỉ." });
     }
 });
 
@@ -139,36 +157,6 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// D. Quên mật khẩu - Đặt lại mật khẩu (Reset Password)
-app.post('/api/reset-password', async (req, res) => {
-    try {
-        const { email, otp, newPassword } = req.body;
-
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        const user = result.rows[0];
-
-        if (!user) return res.status(400).json({ success: false, message: "Email không tồn tại" });
-
-        // Kiểm tra OTP
-        if (user.otp_code !== otp) return res.status(400).json({ success: false, message: "Mã OTP không đúng" });
-        if (new Date() > new Date(user.otp_expires_at)) return res.status(400).json({ success: false, message: "Mã OTP đã hết hạn" });
-
-        // Đổi mật khẩu mới
-        const hashedPassword = await hashPassword(newPassword);
-
-        await pool.query(
-            `UPDATE users SET password_hash = $1, otp_code = NULL WHERE email = $2`,
-            [hashedPassword, email]
-        );
-
-        res.json({ success: true, message: "Đổi mật khẩu thành công. Hãy đăng nhập lại." });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Lỗi đổi mật khẩu" });
-    }
-});
-
 // ---------------------------------------------------------
 // 3. API LỊCH SỬ CHAT
 // ---------------------------------------------------------
@@ -190,9 +178,7 @@ app.get('/api/messages', async (req, res) => {
     } catch (err) { res.status(500).json([]); }
 });
 
-// VERCEL HANDLER:
-// Export 'app' để Vercel serverless function có thể sử dụng.
-// 'app.listen' chỉ dùng khi chạy local (node server.js), trên Vercel đoạn này sẽ được bỏ qua.
+// Server Listen (Cho Vercel & Local)
 if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`🚀 Server API đang chạy tại http://localhost:${PORT}`);
