@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tomtitmuiii</title>
+<title>TomTitmuiii</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1330,55 +1330,35 @@ function renderTerminal(container, id, $win) {
     function renderTextEdit(container, id, $win) {
     const uniqueId = $win.attr('id');
 
-    // 1. CSS Styles (Đã tối ưu để hiển thị tốt trong cửa sổ nhỏ)
+    // 1. CSS Styles (Giữ nguyên style đẹp của bạn)
     const styles = `
     <style>
         .auth-container-${uniqueId} {
-            width: 100%;
-            height: 100%;
-            background: #f5f5f7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%; height: 100%; background: #f5f5f7;
+            display: flex; align-items: center; justify-content: center;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            overflow-y: auto; /* Cho phép cuộn nếu cửa sổ quá nhỏ */
+            overflow-y: auto;
         }
         .auth-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
+            background: white; padding: 25px; border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 320px;
-            text-align: center;
+            width: 90%; max-width: 320px; text-align: center;
             animation: fadeIn 0.3s ease-in-out;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .auth-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #1d1d1f; }
         .auth-input {
-            width: 100%;
-            padding: 10px 12px;
-            margin-bottom: 12px;
-            border: 1px solid #d2d2d7;
-            border-radius: 8px;
-            font-size: 14px;
-            box-sizing: border-box;
-            outline: none;
+            width: 100%; padding: 10px 12px; margin-bottom: 12px;
+            border: 1px solid #d2d2d7; border-radius: 8px; font-size: 14px;
+            box-sizing: border-box; outline: none;
         }
         .auth-input:focus { border-color: #0071e3; box-shadow: 0 0 0 3px rgba(0,113,227,0.1); }
 
         .auth-btn {
-            width: 100%;
-            padding: 10px;
-            background: #0071e3;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
+            width: 100%; padding: 10px; background: #0071e3; color: white;
+            border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: background 0.2s;
         }
         .auth-btn:hover { background: #0077ed; }
         .auth-btn:disabled { background: #ccc; cursor: not-allowed; }
@@ -1431,9 +1411,12 @@ function renderTerminal(container, id, $win) {
 
             <!-- Bước 2: Nhập OTP -->
             <div id="reg-step-2" class="hidden">
-                <p style="font-size:12px; color:#666; margin-bottom:10px;">Đã gửi OTP đến email của bạn.</p>
-                <input type="text" id="reg-otp" class="auth-input" placeholder="Nhập mã 6 số">
+                <p style="font-size:12px; color:#666; margin-bottom:10px;">
+                    Đã gửi OTP đến <b id="reg-email-display"></b>
+                </p>
+                <input type="text" id="reg-otp" class="auth-input" placeholder="Nhập mã 6 số trong email">
                 <button class="auth-btn" id="btn-verify-reg">Xác thực & Đăng ký</button>
+                <button class="auth-btn secondary" id="btn-resend-reg" style="font-size:12px;">Gửi lại mã</button>
             </div>
 
             <button class="auth-btn secondary" id="back-to-login-1">Quay lại đăng nhập</button>
@@ -1443,15 +1426,16 @@ function renderTerminal(container, id, $win) {
         <div id="view-forgot" class="auth-card hidden">
             <div class="auth-title">Quên Mật Khẩu</div>
             <div class="error-msg" id="forgot-error"></div>
+            <div class="success-msg" id="forgot-success"></div>
 
             <div id="forgot-step-1">
                 <p style="font-size:12px; color:#666; margin-bottom:10px;">Nhập email để nhận mã khôi phục.</p>
                 <input type="email" id="forgot-email" class="auth-input" placeholder="Email tài khoản">
-                <button class="auth-btn" id="btn-send-otp-forgot">Gửi mã</button>
+                <button class="auth-btn" id="btn-send-otp-forgot">Gửi mã xác nhận</button>
             </div>
 
             <div id="forgot-step-2" class="hidden">
-                <input type="text" id="forgot-otp" class="auth-input" placeholder="Nhập mã OTP">
+                <input type="text" id="forgot-otp" class="auth-input" placeholder="Nhập mã OTP trong email">
                 <input type="password" id="new-pass" class="auth-input" placeholder="Mật khẩu mới">
                 <button class="auth-btn" id="btn-reset-pass">Đổi mật khẩu</button>
             </div>
@@ -1461,50 +1445,63 @@ function renderTerminal(container, id, $win) {
     </div>
     `;
 
-    // 3. RENDER LÊN GIAO DIỆN (QUAN TRỌNG NHẤT)
+    // 3. RENDER
     container.html(styles + html);
 
-    // 4. LOGIC JAVASCRIPT (Sử dụng container.find để không bị nhầm lẫn giữa các cửa sổ)
+    // 4. LOGIC
     const viewLogin = container.find('#view-login');
     const viewReg = container.find('#view-register');
     const viewForgot = container.find('#view-forgot');
 
+    // -- Helper reset forms --
+    function resetForms() {
+        container.find('.error-msg, .success-msg').hide().text('');
+        container.find('input').val('');
+        container.find('.auth-btn').prop('disabled', false).text(function() { return $(this).attr('original-text') || $(this).text(); });
+    }
+    // Lưu text gốc của nút để restore sau khi loading
+    container.find('.auth-btn').each(function() { $(this).attr('original-text', $(this).text()); });
+
+
     // -- CHUYỂN VIEW --
     container.find('#link-register').click(() => {
-        container.find('.error-msg').hide();
+        resetForms();
         viewLogin.addClass('hidden');
         viewReg.removeClass('hidden');
     });
     container.find('#link-forgot').click(() => {
-        container.find('.error-msg').hide();
+        resetForms();
         viewLogin.addClass('hidden');
         viewForgot.removeClass('hidden');
     });
     container.find('#back-to-login-1, #back-to-login-2').click(() => {
-        container.find('.error-msg').hide();
+        resetForms();
         viewReg.addClass('hidden');
         viewForgot.addClass('hidden');
         viewLogin.removeClass('hidden');
-        // Reset steps
+        // Reset steps logic
         container.find('#reg-step-1').removeClass('hidden');
         container.find('#reg-step-2').addClass('hidden');
+        container.find('#forgot-step-1').removeClass('hidden');
+        container.find('#forgot-step-2').addClass('hidden');
     });
 
-
-
-    // A. ĐĂNG NHẬP
+    // ==========================================
+    // A. ĐĂNG NHẬP (LOGIN)
+    // ==========================================
     container.find('#btn-login').click(async function() {
         const btn = $(this);
-        const email = container.find('#login-email').val();
-        const password = container.find('#login-pass').val();
+        const email = container.find('#login-email').val().trim();
+        const password = container.find('#login-pass').val().trim();
         const errorBox = container.find('#login-error');
 
-        if(!email || !password) return errorBox.text("Vui lòng nhập đủ thông tin").show();
+        if(!email || !password) return errorBox.text("Vui lòng điền đầy đủ thông tin").show();
 
-        btn.text('Đang xử lý...').prop('disabled', true);
+        btn.text('Đang kiểm tra...').prop('disabled', true);
         errorBox.hide();
 
         try {
+            // GỌI API LOGIN THẬT
             const res = await fetch('/api/login', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ email, password })
@@ -1512,78 +1509,173 @@ function renderTerminal(container, id, $win) {
             const data = await res.json();
 
             if (data.success) {
-                // Lưu vào LocalStorage
                 localStorage.setItem('userId', data.userId);
                 localStorage.setItem('userEmail', email);
 
-                // Hiệu ứng thành công
                 btn.text('Thành công!').css('background', '#28cd41');
+
+                // Đóng cửa sổ Login sau 1s
                 setTimeout(() => {
-                    // Đóng cửa sổ Login này lại
                     $win.remove();
-                    // Mở App Chat (Giả sử ID app chat là 'chat')
-                    // Bạn cần gọi hàm mở app chat ở đây, ví dụ: openApp('chat');
-                    alert(`Xin chào ${data.user?.name || email}. Hãy mở ứng dụng Chat!`);
-                }, 1000);
+                    // NẾU CÓ APP CHAT, GỌI Ở ĐÂY. VÍ DỤ:
+                    // if (typeof openApp === 'function') openApp('chat');
+                    alert("Đăng nhập thành công! Hãy mở ứng dụng Chat.");
+                }, 800);
             } else {
-                errorBox.text(data.message || 'Đăng nhập thất bại').show();
+                errorBox.text(data.message || 'Email hoặc mật khẩu sai').show();
                 btn.text('Đăng nhập').prop('disabled', false);
             }
         } catch (e) {
-            errorBox.text('Lỗi kết nối server').show();
+            console.error(e);
+            errorBox.text('Không thể kết nối Server').show();
             btn.text('Đăng nhập').prop('disabled', false);
         }
     });
 
-    // B. ĐĂNG KÝ - GỬI OTP (Cần Backend hỗ trợ)
-    container.find('#btn-send-otp-reg').click(async function() {
+    // ==========================================
+    // B. ĐĂNG KÝ (REGISTER)
+    // ==========================================
+
+    // B1. GỬI OTP ĐĂNG KÝ (ĐÃ FIX: DÙNG API THẬT)
+    container.find('#btn-send-otp-reg, #btn-resend-reg').click(async function() {
         const btn = $(this);
-        const email = container.find('#reg-email').val();
-        const pass = container.find('#reg-pass').val();
+        const email = container.find('#reg-email').val().trim();
+        const pass = container.find('#reg-pass').val().trim();
         const errorBox = container.find('#reg-error');
+        const successBox = container.find('#reg-success');
 
         if(!email || !pass) return errorBox.text("Vui lòng nhập Email và Mật khẩu").show();
 
-        // Giả lập gửi OTP thành công (Vì chưa có API send-otp thật)
-        // Khi có API: await fetch('/api/send-otp', ...)
-        btn.text('Đang gửi...').prop('disabled', true);
+        btn.text('Đang gửi OTP...').prop('disabled', true);
+        errorBox.hide(); successBox.hide();
 
-        setTimeout(() => {
-            container.find('#reg-step-1').addClass('hidden');
-            container.find('#reg-step-2').removeClass('hidden');
-            container.find('#reg-success').text('W8ing').show();
+        try {
+            // GỌI API GỬI OTP
+            const res = await fetch('/api/send-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email: email, type: 'register' }) // type: register
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                container.find('#reg-email-display').text(email);
+                container.find('#reg-step-1').addClass('hidden');
+                container.find('#reg-step-2').removeClass('hidden');
+                successBox.text('Đã gửi mã OTP! Kiểm tra cả mục Spam.').show();
+            } else {
+                errorBox.text(data.message || 'Lỗi gửi mail').show();
+                btn.text('Gửi mã OTP').prop('disabled', false);
+            }
+        } catch (e) {
+            errorBox.text('Lỗi kết nối Server').show();
             btn.text('Gửi mã OTP').prop('disabled', false);
-        }, 1000);
+        }
     });
 
-    // C. ĐĂNG KÝ - XÁC THỰC
+    // B2. XÁC THỰC VÀ TẠO TÀI KHOẢN
     container.find('#btn-verify-reg').click(async function() {
-        const email = container.find('#reg-email').val();
-        const password = container.find('#reg-pass').val();
-        const otp = container.find('#reg-otp').val();
+        const btn = $(this);
+        const email = container.find('#reg-email').val().trim();
+        const password = container.find('#reg-pass').val().trim();
+        const otp = container.find('#reg-otp').val().trim();
         const errorBox = container.find('#reg-error');
 
         if(!otp) return errorBox.text("Vui lòng nhập OTP").show();
 
+        btn.text('Đang xác thực...').prop('disabled', true);
+
         try {
             const res = await fetch('/api/register', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email, password, otp }) // Backend cần xử lý OTP này
+                body: JSON.stringify({ email, password, otp })
             });
             const data = await res.json();
 
             if(data.success) {
-                alert('Đăng ký thành công! Vui lòng đăng nhập.');
+                alert('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
                 container.find('#back-to-login-1').click(); // Quay về login
             } else {
-                errorBox.text(data.message).show();
+                errorBox.text(data.message || 'Mã OTP không đúng').show();
+                btn.text('Xác thực & Đăng ký').prop('disabled', false);
             }
         } catch (e) {
             errorBox.text('Lỗi kết nối').show();
+            btn.text('Xác thực & Đăng ký').prop('disabled', false);
+        }
+    });
+
+    // ==========================================
+    // C. QUÊN MẬT KHẨU (FORGOT PASSWORD)
+    // ==========================================
+
+    // C1. Gửi OTP quên mật khẩu
+    container.find('#btn-send-otp-forgot').click(async function() {
+        const btn = $(this);
+        const email = container.find('#forgot-email').val().trim();
+        const errorBox = container.find('#forgot-error');
+
+        if(!email) return errorBox.text("Vui lòng nhập Email").show();
+
+        btn.text('Đang gửi...').prop('disabled', true);
+        errorBox.hide();
+
+        try {
+            // Gọi API gửi OTP với type = 'forgot' (Nếu server hỗ trợ)
+            // Hoặc dùng tạm type='register' nếu logic server chưa phân biệt
+            const res = await fetch('/api/send-otp', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, type: 'register' }) // Tạm dùng register type để lấy mã
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                container.find('#forgot-step-1').addClass('hidden');
+                container.find('#forgot-step-2').removeClass('hidden');
+            } else {
+                errorBox.text(data.message).show();
+                btn.text('Gửi mã').prop('disabled', false);
+            }
+        } catch (e) {
+            errorBox.text('Lỗi kết nối').show();
+            btn.text('Gửi mã').prop('disabled', false);
+        }
+    });
+
+    // C2. Đổi mật khẩu mới
+    container.find('#btn-reset-pass').click(async function() {
+        const btn = $(this);
+        const email = container.find('#forgot-email').val().trim();
+        const otp = container.find('#forgot-otp').val().trim();
+        const newPass = container.find('#new-pass').val().trim();
+        const errorBox = container.find('#forgot-error');
+
+        if(!otp || !newPass) return errorBox.text("Vui lòng nhập đủ thông tin").show();
+
+        btn.text('Đang đổi...').prop('disabled', true);
+
+        try {
+            // LƯU Ý: Bạn cần tạo thêm API /api/reset-password ở server.js
+            // Nếu chưa có, đoạn này sẽ lỗi 404
+            const res = await fetch('/api/reset-password', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, otp, newPassword: newPass })
+            });
+            const data = await res.json();
+
+            if(data.success) {
+                alert('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
+                container.find('#back-to-login-2').click();
+            } else {
+                errorBox.text(data.message || 'OTP sai hoặc hết hạn').show();
+                btn.text('Đổi mật khẩu').prop('disabled', false);
+            }
+        } catch (e) {
+            errorBox.text('Chưa có API đổi mật khẩu').show();
+            btn.text('Đổi mật khẩu').prop('disabled', false);
         }
     });
 }
-
 
 
 
