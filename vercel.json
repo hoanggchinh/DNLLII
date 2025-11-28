@@ -4,12 +4,28 @@
     {
       "src": "server.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "auth_window.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.{png,jpg,jpeg,svg,gif,css}",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "/server.js"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
